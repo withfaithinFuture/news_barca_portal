@@ -1,0 +1,70 @@
+version: '3.9'
+
+services:
+  redis:
+    image: redis:7
+
+  auth_service:
+    build: ./auth_service
+    container_name: auth_service
+    command: gunicorn auth_service.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - ./auth_service:/app
+    expose:
+      - "8000"
+    depends_on:
+      - db
+
+  feedback_service:
+    build: ./feedback_service
+    container_name: feedback_service
+    command: gunicorn feedback_service.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - ./feedback_service:/app
+    expose:
+      - "8000"
+    depends_on:
+      - db
+
+  content_service:
+    build: ./content_service
+    container_name: content_service
+    command: daphne -b 0.0.0.0 -p 8000 content_service.asgi:application
+    volumes:
+      - ./content_service:/app
+      - ./content_service/media:/app/media
+      - ./content_service/static:/app/static
+    expose:
+      - "8000"
+    depends_on:
+      - db
+      - redis
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./content_service/static:/static
+      - ./content_service/media:/media
+    depends_on:
+      - auth_service
+      - feedback_service
+      - content_service
+
+  db:
+    image: postgres:14
+    container_name: postgres_db
+    environment:
+      POSTGRES_DB: new_barca_db
+      POSTGRES_USER: barca_user
+      POSTGRES_PASSWORD: barca_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
