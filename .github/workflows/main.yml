@@ -1,0 +1,36 @@
+name: Django CI with Docker Compose
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Compose
+        run: docker-compose -f docker-compose.yml up -d --build
+
+      - name: Wait for services to start
+        run: sleep 15
+
+      - name: Run migrations
+        run: |
+          docker-compose exec -T auth_service python manage.py migrate
+          docker-compose exec -T content_service python manage.py migrate
+          docker-compose exec -T feedback_service python manage.py migrate
+
+      - name: Run tests
+        run: |
+          docker-compose exec -T auth_service python manage.py test
+          docker-compose exec -T content_service python manage.py test
+          docker-compose exec -T feedback_service python manage.py test
+
+      - name: Tear down
+        run: docker-compose down
