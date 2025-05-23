@@ -41,10 +41,3 @@
 - **GitHub Actions** (CI/CD)
 
 ---
-
-## 🚀 Быстрый старт
-
-1. **Клонируйте репозиторий**:
-   ```bash
-   git clone https://github.com/withtrrtuture/fc_barca_services.git
-   cd fc_barca_services
